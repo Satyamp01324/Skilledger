@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { getPending, issueCredential, sealBlock } from '../api/client';
+import { getPending, issueCredential, sealBlock, getInstitutions } from '../api/client';
 
 const emptyForm = {
   certificate_id: '',
@@ -9,6 +9,7 @@ const emptyForm = {
   grade: '',
   year: '2026',
   category: 'Professional Skills',
+  issuer: 'State University Registrar Office',
   evidence_title: '',
   evidence_type: 'code_repository',
   evidence_url: '',
@@ -18,21 +19,26 @@ const emptyForm = {
 export default function IssueCredential({ showToast }) {
   const [form, setForm] = useState(emptyForm);
   const [pending, setPending] = useState([]);
+  const [institutions, setInstitutions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [sealing, setSealing] = useState(false);
 
-  const loadPending = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
-      const data = await getPending();
-      setPending(data.pending || []);
+      const [pendingData, instData] = await Promise.all([
+        getPending().catch(() => ({ pending: [] })),
+        getInstitutions().catch(() => ({ institutions: [] })),
+      ]);
+      setPending(pendingData.pending || []);
+      setInstitutions(instData.institutions || []);
     } catch (e) {
-      /* silent - dashboard will surface connectivity errors */
+      /* silent */
     }
   }, []);
 
   useEffect(() => {
-    loadPending();
-  }, [loadPending]);
+    loadData();
+  }, [loadData]);
 
   const handleChange = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -55,13 +61,14 @@ export default function IssueCredential({ showToast }) {
         grade: form.grade.trim(),
         year: form.year.trim(),
         category: form.category,
+        issuer: form.issuer,
         evidence_items,
       };
 
       const res = await issueCredential(payload);
       showToast(res.message, 'success');
       setForm(emptyForm);
-      loadPending();
+      loadData();
     } catch (e) {
       const msg = e.response?.data?.error || 'Failed to issue credential.';
       showToast(msg, 'error');
@@ -108,8 +115,18 @@ export default function IssueCredential({ showToast }) {
 
             <div className="grid-2">
               <div className="input-group">
-                <label className="input-label">Skill / Course Title</label>
-                <input className="input-field" value={form.course} onChange={handleChange('course')} placeholder="Full-Stack Cryptography" required />
+                <label className="input-label">Issuing Authority (Trust Registry)</label>
+                <select className="input-field" value={form.issuer} onChange={handleChange('issuer')}>
+                  {institutions.length > 0 ? (
+                    institutions.map((inst) => (
+                      <option key={inst.institution_id} value={inst.name}>
+                        {inst.name} ({inst.institution_id})
+                      </option>
+                    ))
+                  ) : (
+                    <option value="State University Registrar Office">State University Registrar Office (INST-001)</option>
+                  )}
+                </select>
               </div>
               <div className="input-group">
                 <label className="input-label">Credential Category</label>
@@ -120,6 +137,11 @@ export default function IssueCredential({ showToast }) {
                   <option value="Internship">Internship</option>
                 </select>
               </div>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Skill / Course / Credential Title</label>
+              <input className="input-field" value={form.course} onChange={handleChange('course')} placeholder="Full-Stack Cryptography or B.S. Computer Science" required />
             </div>
 
             <div className="grid-2">

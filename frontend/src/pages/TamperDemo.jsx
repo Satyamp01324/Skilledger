@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { tamperDemo, demoTamperEvidence, demoMakeUnavailable, demoResetEvidence, resetChain } from '../api/client';
+import { tamperDemo, demoTamperEvidence, demoMakeUnavailable, demoResetEvidence, demoUnauthorizedIssuer, resetChain } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 
 export default function TamperDemo({ showToast }) {
   const [result, setResult] = useState(null);
   const [driftResult, setDriftResult] = useState(null);
+  const [unauthResult, setUnauthResult] = useState(null);
   const [running, setRunning] = useState(false);
   const navigate = useNavigate();
 
@@ -53,11 +54,28 @@ export default function TamperDemo({ showToast }) {
     }
   };
 
+  const handleUnauthorizedIssuer = async () => {
+    try {
+      await demoUnauthorizedIssuer('Rogue Online Academy', 'Academic');
+      showToast('Unexpected: Rogue issuance was allowed!', 'error');
+    } catch (e) {
+      const errorMsg = e.response?.data?.error || 'Issuance rejected by Trust Registry policy (403 Forbidden).';
+      setUnauthResult({
+        blocked: true,
+        message: errorMsg,
+        actor: 'Rogue Online Academy',
+        status: 403,
+      });
+      showToast('Policy Enforced: Unauthorized issuer rejected (403 Forbidden)', 'error');
+    }
+  };
+
   const handleFullReset = async () => {
     try {
       await resetChain();
       setResult(null);
       setDriftResult(null);
+      setUnauthResult(null);
       showToast('Ledger reset to initial state with demo credentials.', 'success');
     } catch (e) {
       showToast('Reset failed.', 'error');
@@ -68,11 +86,13 @@ export default function TamperDemo({ showToast }) {
     <div>
       <div className="page-header">
         <div className="page-title">Tamper & Drift Demo</div>
-        <div className="page-subtitle">Demonstrate Test Scenarios: Raw Block Tampering, Evidence Drift, and Unavailable Sources</div>
+        <div className="page-subtitle">
+          Mandatory MVP Demonstrations: Modified Records, Evidence Drift, Unauthorized Issuers, and Chain Tampering
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 680 }}>
-        {/* PANEL 1: EVIDENCE DRIFT DEMO */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 720 }}>
+        {/* SCENARIO A: EVIDENCE DRIFT DEMO */}
         <div className="panel">
           <div className="panel-title" style={{ color: 'var(--accent-cyan)' }}>
             Scenario A: Evidence Integrity & Drift Detection (Test 5 & 6)
@@ -116,10 +136,52 @@ export default function TamperDemo({ showToast }) {
           )}
         </div>
 
-        {/* PANEL 2: RAW BLOCK TAMPER DEMO */}
+        {/* SCENARIO B: UNAUTHORIZED ISSUER REJECTION (Mandatory MVP Req #5) */}
+        <div className="panel">
+          <div className="panel-title" style={{ color: 'var(--accent-amber)' }}>
+            Scenario B: Rejection of Unauthorized Issuer (MVP Req #5 & Test 3)
+          </div>
+          <p className="tamper-explainer">
+            The decentralized Trust Registry prevents rogue or unaccredited entities from minting credentials.
+            Simulate an unauthorized entity (e.g. <em>"Rogue Online Academy"</em>) attempting to issue a degree without registry permissions.
+            The blockchain smart contract policy immediately denies the transaction with <strong>403 Forbidden</strong> and records the policy violation.
+          </p>
+          <button className="btn btn-danger" onClick={handleUnauthorizedIssuer} style={{ marginTop: 16 }}>
+            Simulate Unauthorized Issuance Attempt
+          </button>
+
+          {unauthResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="tamper-result tamper-result-bad"
+            >
+              <div className="tamper-result-title">
+                ✕ 403 FORBIDDEN — UNAUTHORIZED ISSUER REJECTED
+              </div>
+              <div className="tamper-result-message">{unauthResult.message}</div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => navigate('/institutions')}
+                >
+                  View Trust Registry Authorities →
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => navigate('/audit')}
+                >
+                  View Blocked Event in Audit Explorer →
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* SCENARIO C: RAW BLOCK TAMPER DEMO */}
         <div className="panel">
           <div className="panel-title" style={{ color: 'var(--accent-violet)' }}>
-            Scenario B: Direct Block Storage Tampering (Test 2)
+            Scenario C: Direct Block Storage Tampering (Test 2)
           </div>
           <p className="tamper-explainer">
             Simulates an attacker with raw database access editing a credential record directly in storage —
@@ -151,7 +213,7 @@ export default function TamperDemo({ showToast }) {
           )}
         </div>
 
-        {/* PANEL 3: RESET */}
+        {/* PANEL 4: RESET */}
         <div className="panel">
           <div className="panel-title">Reset Demo Environment</div>
           <p className="tamper-explainer">

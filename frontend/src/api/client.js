@@ -24,6 +24,9 @@ export const demoTamperEvidence = (certId, alteredContent) => client.post('/demo
 export const demoMakeUnavailable = (certId) => client.post('/demo/make-unavailable', { certificate_id: certId }).then(r => r.data);
 export const demoResetEvidence = (certId) => client.post('/demo/reset-evidence', { certificate_id: certId }).then(r => r.data);
 
+export const registerInstitution = (payload) => client.post('/institutions/register', payload).then(r => r.data);
+export const demoUnauthorizedIssuer = (rogueName, category) => client.post('/demo/unauthorized-issuer', { rogue_name: rogueName, category }).then(r => r.data);
+
 export const toggleValidator = (nodeId) => client.post(`/validators/${nodeId}/toggle`).then(r => r.data.data);
 export const resetChain = () => client.post('/reset').then(r => r.data);
 

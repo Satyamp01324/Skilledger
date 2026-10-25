@@ -12,6 +12,7 @@ export default function VerifyCredential({ showToast }) {
   const [revokeReason, setRevokeReason] = useState('');
   const [revoking, setRevoking] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showW3C, setShowW3C] = useState(false);
 
   const runVerification = async (targetId) => {
     if (!targetId || !targetId.trim()) return;
@@ -237,9 +238,12 @@ export default function VerifyCredential({ showToast }) {
                 </div>
 
                 {/* ACTION BAR */}
-                <div style={{ display: 'flex', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'flex', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
                   <button className="btn btn-ghost" onClick={() => setShowShareModal(!showShareModal)}>
-                    🔗 Share Verification Link & QR
+                    🔗 Share Link & QR
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setShowW3C(!showW3C)}>
+                    📄 {showW3C ? 'Hide W3C JSON-LD' : 'W3C Verifiable Credential'}
                   </button>
                   {result.checks?.credential_status?.status === 'ACTIVE' && (
                     <button className="btn btn-danger" onClick={() => setShowRevokeModal(true)}>
@@ -247,6 +251,42 @@ export default function VerifyCredential({ showToast }) {
                     </button>
                   )}
                 </div>
+
+                {/* W3C VERIFIABLE CREDENTIAL JSON-LD VIEWER */}
+                {showW3C && result.w3c_verifiable_credential && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 16, padding: 16, background: 'var(--bg-panel-raised)', borderRadius: 'var(--radius-sm)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div className="panel-title" style={{ margin: 0, color: 'var(--accent-violet)' }}>
+                        W3C Verifiable Credential v1.0 (JSON-LD & DID)
+                      </div>
+                      <button
+                        className="btn btn-ghost"
+                        style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(JSON.stringify(result.w3c_verifiable_credential, null, 2));
+                          showToast('W3C JSON-LD copied to clipboard!', 'success');
+                        }}
+                      >
+                        Copy JSON-LD
+                      </button>
+                    </div>
+                    <pre
+                      style={{
+                        background: 'var(--bg-panel)',
+                        padding: 12,
+                        borderRadius: 6,
+                        fontSize: '0.74rem',
+                        overflowX: 'auto',
+                        maxHeight: 260,
+                        color: 'var(--accent-cyan)',
+                        border: '1px solid var(--border-subtle)',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {JSON.stringify(result.w3c_verifiable_credential, null, 2)}
+                    </pre>
+                  </motion.div>
+                )}
 
                 {/* SHARE / QR MODAL */}
                 {showShareModal && (

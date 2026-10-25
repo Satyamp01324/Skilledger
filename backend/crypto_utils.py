@@ -164,3 +164,52 @@ def verify_signature(credential: dict, signature_hex: str, public_key) -> bool:
         return True
     except (InvalidSignature, ValueError, TypeError):
         return False
+
+
+def format_w3c_verifiable_credential(credential: dict) -> dict:
+    """
+    Transforms a SkillLedger credential into a standard W3C Verifiable Credential v1.0 data model.
+    Reference: https://www.w3.org/TR/vc-data-model/
+    """
+    cert_id = credential.get("certificate_id", "CERT-UNKNOWN")
+    issuer_id = credential.get("issuer_id", "INST-001")
+    issuer_name = credential.get("issuer", "State University Registrar Office")
+    issuer_did = f"did:skillledger:{issuer_id.lower()}"
+    subject_id = f"did:holder:{sha256_hash(credential.get('student_name', 'anonymous'))[:16]}"
+    
+    issued_ts = credential.get("issued_at")
+    import datetime
+    issuance_date = datetime.datetime.fromtimestamp(issued_ts, datetime.timezone.utc).isoformat() if issued_ts else datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    return {
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https://w3id.org/security/suites/jws-2020/v1"
+        ],
+        "id": f"urn:credential:skillledger:{cert_id}",
+        "type": ["VerifiableCredential", "EducationalAndOccupationalCredential"],
+        "issuer": {
+            "id": issuer_did,
+            "name": issuer_name
+        },
+        "issuanceDate": issuance_date,
+        "credentialSubject": {
+            "id": subject_id,
+            "certificateId": cert_id,
+            "name": credential.get("student_name"),
+            "course": credential.get("course"),
+            "grade": credential.get("grade"),
+            "year": credential.get("year"),
+            "category": credential.get("category"),
+            "evidenceManifestHash": credential.get("evidence_manifest_hash"),
+            "status": credential.get("status", "ACTIVE")
+        },
+        "evidence": credential.get("evidence_manifest", {}).get("items", []),
+        "proof": {
+            "type": "RsaSignature2018",
+            "created": issuance_date,
+            "proofPurpose": "assertionMethod",
+            "verificationMethod": f"{issuer_did}#keys-1",
+            "signatureValue": credential.get("signature")
+        }
+    }

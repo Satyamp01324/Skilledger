@@ -12,7 +12,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from blockchain_core import Blockchain
-from crypto_utils import Authority, verify_signature, build_evidence_manifest, sha256_hash, canonical_json
+from crypto_utils import Authority, verify_signature, build_evidence_manifest, sha256_hash, canonical_json, format_w3c_verifiable_credential
 from consensus import PoAConsensus
 from trust_registry import TrustRegistry
 
@@ -115,6 +115,47 @@ def health():
 @app.route("/api/institutions")
 def get_institutions():
     return ok({"institutions": trust_registry.get_all_institutions()})
+
+
+@app.route("/api/institutions/register", methods=["POST"])
+def register_institution():
+    """
+    Registers a new institution in the decentralized Trust Registry.
+    Enforces identity registration and records an on-chain audit event.
+    """
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()
+    category = (payload.get("category") or "Academic & Professional Skills").strip()
+    authorized_categories = payload.get("authorized_categories") or ["Academic", "Professional Skills", "Internship", "Engineering"]
+
+    if not name:
+        return err("Institution name is required.", status=422)
+
+    existing = next((i for i in trust_registry.get_all_institutions() if i["name"].lower() == name.lower()), None)
+    if existing:
+        return err(f"Institution '{name}' is already registered in the Trust Registry.", status=409)
+
+    new_id = f"INST-{len(trust_registry.institutions) + 1:03d}"
+    inst = trust_registry.register_institution(
+        institution_id=new_id,
+        name=name,
+        category=category,
+        authorized_categories=authorized_categories
+    )
+
+    blockchain._record_audit_event(
+        event_type="INSTITUTION_REGISTERED",
+        actor=name,
+        certificate_id=new_id,
+        details=f"New institution registered: {name} (ID: {new_id}, DID: {inst.did})",
+    )
+
+    return ok(
+        {"institution": {**inst.to_dict(), "authorized_categories": authorized_categories}},
+        message=f"Institution '{name}' registered in Trust Registry with DID {inst.did}.",
+        status=201
+    )
+
 
 
 @app.route("/api/chain")
@@ -403,6 +444,7 @@ def verify_credential(certificate_id):
         "block_index": found["block_index"],
         "block_hash": found["block_hash"],
         "credential": found["credential"],
+        "w3c_verifiable_credential": format_w3c_verifiable_credential(found["credential"]),
         "share_url": f"/verify?certId={certificate_id}",
     })
 
@@ -487,6 +529,31 @@ def tamper_demo():
             "chain": blockchain.to_dict_list(),
         },
         message="Block #1 was just tampered with directly (bypassing consensus & signatures).",
+    )
+
+
+@app.route("/api/demo/unauthorized-issuer", methods=["POST"])
+def demo_unauthorized_issuer():
+    """
+    Simulates an unregistered / unauthorized rogue entity attempting to issue a credential.
+    Demonstrates mandatory MVP rejection criteria (HTTP 403 Forbidden).
+    """
+    payload = request.get_json(silent=True) or {}
+    rogue_name = (payload.get("rogue_name") or "Rogue Unaccredited Academy").strip()
+    category = (payload.get("category") or "Academic").strip()
+
+    is_auth, auth_msg = trust_registry.is_issuer_authorized(rogue_name, category)
+
+    blockchain._record_audit_event(
+        event_type="UNAUTHORIZED_ISSUANCE_BLOCKED",
+        actor=rogue_name,
+        certificate_id="BLOCKED_ATTEMPT",
+        details=f"Trust Registry Enforcement: Blocked unauthorized issuance attempt by unregistered entity '{rogue_name}' for category '{category}'.",
+    )
+
+    return err(
+        f"REJECTED (403 Forbidden): Issuer '{rogue_name}' is not registered or authorized in the decentralized Trust Registry for category '{category}'. Blockchain smart contract policy rejected record issuance.",
+        status=403
     )
 
 

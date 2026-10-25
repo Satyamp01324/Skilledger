@@ -4,8 +4,8 @@ trust_registry.py
 On-chain / Ledger-level Trust Registry for SkillLedger institutions and authorized issuers.
 
 Enforces:
-    - Registered institutions with lifecycle states (ACTIVE, SUSPENDED).
-    - Authorized issuer signing keys and category permissions (e.g. Academic, Professional Skills).
+    - Registered institutions with W3C DIDs (e.g. did:skillledger:inst-001) and lifecycle states.
+    - Authorized issuer signing keys and category permissions (e.g. Academic, Professional Skills, Internship).
     - Rejection of unauthorized issuance and revocation operations.
 """
 
@@ -15,6 +15,7 @@ import time
 class Institution:
     def __init__(self, institution_id: str, name: str, category: str, authorized_keys: list = None, status: str = "ACTIVE"):
         self.institution_id = institution_id
+        self.did = f"did:skillledger:{institution_id.lower()}"
         self.name = name
         self.category = category
         self.authorized_keys = authorized_keys or []
@@ -24,6 +25,7 @@ class Institution:
     def to_dict(self):
         return {
             "institution_id": self.institution_id,
+            "did": self.did,
             "name": self.name,
             "category": self.category,
             "status": self.status,
@@ -54,14 +56,14 @@ class TrustRegistry:
             institution_id="INST-002",
             name="National Institute of Technology",
             category="Engineering & Technology",
-            authorized_categories=["Academic", "Engineering"],
+            authorized_categories=["Academic", "Engineering", "Professional Skills"],
         )
 
     def register_institution(self, institution_id: str, name: str, category: str, authorized_categories: list = None):
         inst = Institution(institution_id, name, category)
         self.institutions[institution_id] = {
             "entity": inst,
-            "authorized_categories": authorized_categories or ["Academic", "Professional Skills"],
+            "authorized_categories": authorized_categories or ["Academic", "Professional Skills", "Internship"],
             "status": "ACTIVE",
         }
         return inst

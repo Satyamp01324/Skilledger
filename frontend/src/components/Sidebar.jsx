@@ -51,6 +51,9 @@ export default function Sidebar() {
           <NavLink to="/dashboard" className="sidebar-link" end>
             <span className="sidebar-link-icon">▦</span> Dashboard
           </NavLink>
+          <NavLink to="/institutions" className="sidebar-link">
+            <span className="sidebar-link-icon">🏛</span> Trust Registry
+          </NavLink>
           <NavLink to="/issue" className="sidebar-link">
             <span className="sidebar-link-icon">✎</span> Issue Credential
           </NavLink>

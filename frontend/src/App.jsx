@@ -10,6 +10,7 @@ import ChainVisualization from './pages/ChainVisualization';
 import TamperDemo from './pages/TamperDemo';
 import AuditExplorer from './pages/AuditExplorer';
 import SkillValidator from './pages/SkillValidator';
+import TrustRegistryPage from './pages/TrustRegistryPage';
 import './App.css';
 
 let toastId = 0;
@@ -34,6 +35,14 @@ export default function App() {
           element={
             <AppShell>
               <Dashboard showToast={showToast} />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/institutions"
+          element={
+            <AppShell>
+              <TrustRegistryPage showToast={showToast} />
             </AppShell>
           }
         />
