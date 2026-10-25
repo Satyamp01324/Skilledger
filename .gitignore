@@ -1,0 +1,22 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Node
+frontend/node_modules/
+frontend/dist/
+node_modules/
+dist/
+.vite/
+
+# Environment and IDE
+.env
+.env.local
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
