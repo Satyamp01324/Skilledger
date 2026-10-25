@@ -7,7 +7,7 @@ export default function MockCertificate() {
   const [searchParams] = useSearchParams();
   const certId = paramId || searchParams.get('id') || searchParams.get('certId') || 'CERT-2026-001';
 
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [certData, setCertData] = useState(null);
   const [showProofDetails, setShowProofDetails] = useState(false);
 
@@ -58,7 +58,7 @@ export default function MockCertificate() {
         minHeight: '100vh',
         background: 'linear-gradient(145deg, #060913 0%, #0c1222 50%, #060913 100%)',
         color: '#f8fafc',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
         padding: '24px 16px',
         display: 'flex',
         flexDirection: 'column',
