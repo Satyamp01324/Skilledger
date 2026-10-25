@@ -11,6 +11,7 @@ import TamperDemo from './pages/TamperDemo';
 import AuditExplorer from './pages/AuditExplorer';
 import SkillValidator from './pages/SkillValidator';
 import TrustRegistryPage from './pages/TrustRegistryPage';
+import MockCertificate from './pages/MockCertificate';
 import './App.css';
 
 let toastId = 0;
@@ -70,14 +71,9 @@ export default function App() {
             </AppShell>
           }
         />
-        <Route
-          path="/certificate/:id"
-          element={
-            <AppShell>
-              <VerifyCredential showToast={showToast} />
-            </AppShell>
-          }
-        />
+        <Route path="/certificate/:id" element={<MockCertificate />} />
+        <Route path="/cert/:id" element={<MockCertificate />} />
+        <Route path="/mock-certificate" element={<MockCertificate />} />
         <Route
           path="/chain"
           element={

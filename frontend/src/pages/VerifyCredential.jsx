@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { verifyCredential, revokeCredential } from '../api/client';
 import RealQRCode from '../components/RealQRCode';
 
-const DEFAULT_TUNNEL_URL = 'https://bug-sell-physiology-tubes.trycloudflare.com';
+const DEFAULT_TUNNEL_URL = 'https://open-teacher-hormone-fantastic.trycloudflare.com';
+const DEFAULT_WIFI_URL = 'http://10.227.217.35:3000';
 
 export default function VerifyCredential({ showToast }) {
   const { id: paramId } = useParams();
@@ -23,16 +24,19 @@ export default function VerifyCredential({ showToast }) {
 
   // QR URL Configuration (Defaults to Cloudflare tunnel if on localhost so mobile phone can scan)
   const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const [urlMode, setUrlMode] = useState(isLocalHost ? 'tunnel' : 'current');
+  const [urlMode, setUrlMode] = useState(isLocalHost ? 'tunnel' : 'current'); // 'tunnel' | 'wifi' | 'current'
   const [tunnelUrl, setTunnelUrl] = useState(DEFAULT_TUNNEL_URL);
 
   const getEffectiveShareUrl = (targetId) => {
     const id = encodeURIComponent((targetId || certId || '').trim());
     if (!id) return '';
-    const base = urlMode === 'tunnel'
-      ? tunnelUrl.replace(/\/+$/, '')
-      : (typeof window !== 'undefined' ? window.location.origin : tunnelUrl);
-    return `${base}/verify?certId=${id}`;
+    let base = tunnelUrl.replace(/\/+$/, '');
+    if (urlMode === 'wifi') {
+      base = DEFAULT_WIFI_URL;
+    } else if (urlMode === 'current') {
+      base = typeof window !== 'undefined' ? window.location.origin : tunnelUrl;
+    }
+    return `${base}/certificate/${id}`;
   };
 
   const runVerification = async (targetId) => {
@@ -348,29 +352,38 @@ export default function VerifyCredential({ showToast }) {
                         />
 
                         {/* URL SWITCHER / CONTROLS */}
-                        <div style={{ marginTop: 12, width: '100%', maxWidth: 240, textAlign: 'center' }}>
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+                        <div style={{ marginTop: 12, width: '100%', maxWidth: 280, textAlign: 'center' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
                             <button
                               type="button"
                               className={`btn ${urlMode === 'tunnel' ? 'btn-primary' : 'btn-ghost'}`}
-                              style={{ fontSize: '0.68rem', padding: '3px 8px' }}
+                              style={{ fontSize: '0.64rem', padding: '3px 6px' }}
                               onClick={() => setUrlMode('tunnel')}
-                              title="Uses Cloudflare HTTPS tunnel so any external mobile device can scan"
+                              title="Uses Cloudflare HTTPS tunnel so external mobile devices on 4G/5G can scan"
                             >
-                              📱 Mobile Public URL
+                              📱 Cloudflare
+                            </button>
+                            <button
+                              type="button"
+                              className={`btn ${urlMode === 'wifi' ? 'btn-primary' : 'btn-ghost'}`}
+                              style={{ fontSize: '0.64rem', padding: '3px 6px' }}
+                              onClick={() => setUrlMode('wifi')}
+                              title="Direct LAN IP for devices connected to the same Wi-Fi (No Cloudflare latency)"
+                            >
+                              📶 Same Wi-Fi
                             </button>
                             <button
                               type="button"
                               className={`btn ${urlMode === 'current' ? 'btn-primary' : 'btn-ghost'}`}
-                              style={{ fontSize: '0.68rem', padding: '3px 8px' }}
+                              style={{ fontSize: '0.64rem', padding: '3px 6px' }}
                               onClick={() => setUrlMode('current')}
                               title="Uses current browser origin"
                             >
-                              💻 Local URL
+                              💻 Local
                             </button>
                           </div>
 
-                          <div style={{ display: 'flex', gap: 6 }}>
+                          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
                             <input
                               className="input-field"
                               style={{ fontSize: '0.68rem', padding: '4px 6px', flex: 1 }}
@@ -390,9 +403,32 @@ export default function VerifyCredential({ showToast }) {
                             </button>
                           </div>
 
+                          <a
+                            href={activeShareUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-primary"
+                            style={{
+                              display: 'inline-block',
+                              width: '100%',
+                              padding: '6px 12px',
+                              fontSize: '0.74rem',
+                              textDecoration: 'none',
+                              textAlign: 'center',
+                              fontWeight: 700,
+                            }}
+                          >
+                            👁️ Open / Preview Certificate
+                          </a>
+
                           {urlMode === 'tunnel' && isLocalHost && (
                             <div style={{ fontSize: '0.66rem', color: 'var(--accent-cyan)', marginTop: 6 }}>
                               ✓ Configured with live TryCloudflare mobile tunnel
+                            </div>
+                          )}
+                          {urlMode === 'wifi' && (
+                            <div style={{ fontSize: '0.66rem', color: '#10b981', marginTop: 6 }}>
+                              ✓ Direct Wi-Fi LAN address (phone must be on same Wi-Fi)
                             </div>
                           )}
                         </div>
