@@ -63,6 +63,22 @@ export default function App() {
           }
         />
         <Route
+          path="/verify/:id"
+          element={
+            <AppShell>
+              <VerifyCredential showToast={showToast} />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/certificate/:id"
+          element={
+            <AppShell>
+              <VerifyCredential showToast={showToast} />
+            </AppShell>
+          }
+        />
+        <Route
           path="/chain"
           element={
             <AppShell>

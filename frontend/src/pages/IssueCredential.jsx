@@ -82,7 +82,7 @@ export default function IssueCredential({ showToast }) {
     try {
       const res = await sealBlock();
       showToast(res.message, 'success');
-      loadPending();
+      loadData();
     } catch (e) {
       const msg = e.response?.data?.error || 'Failed to seal block.';
       showToast(msg, 'error');
